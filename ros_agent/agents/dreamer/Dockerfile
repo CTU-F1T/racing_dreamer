@@ -48,13 +48,15 @@ RUN mkdir -p /ws/src/f1tenth_agent_ros/
 WORKDIR /ws/src/f1tenth_agent_ros/
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    python3.6 python3.6-dev python3-pip git wget unzip make gcc g++ \
+    python3.6 python3.6-dev python3-pip python3.6-distutils git wget unzip make gcc g++ \
     libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev liblapack-dev libblas-dev gfortran
 #    rm -rf /var/lib/apt/lists/*
 
 # install python requirements for this agent
 ARG AGENT
 COPY agents/${AGENT}/requirements.txt .
+
+RUN python3.6 -m pip install --upgrade pip
 RUN python3.6 -m pip install --no-cache-dir -r requirements.txt
 
 RUN apt-get install -y --no-install-recommends ros-noetic-ackermann-msgs ros-noetic-tf python3-catkin-tools python3-catkin-pkg

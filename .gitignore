@@ -6,6 +6,9 @@
 # C extensions
 *.so
 
+# Generated Dockerfile
+ros_agent/Dockerfile
+
 # Distribution / packaging
 .Python
 build/
