@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers as tfkl
 from tensorflow_probability import distributions as tfd
-from tensorflow.keras.mixed_precision import experimental as prec
+from tensorflow.keras import mixed_precision as prec
 from tensorflow_probability import layers as tfpl
 
 import tools as tools
@@ -86,7 +86,7 @@ class Dreamer(tools.Module):
 
     @tf.function()
     def train(self, data, log_images=False):
-        self._strategy.experimental_run_v2(self._train, args=(data, log_images))
+        self._strategy.run(self._train, args=(data, log_images))
 
     def _train(self, data, log_images):
         with tf.GradientTape() as model_tape:

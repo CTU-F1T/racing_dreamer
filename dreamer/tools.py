@@ -11,7 +11,7 @@ import tensorflow as tf
 import tensorflow.compat.v1 as tf1
 import tensorflow_probability as tfp
 import tfplot
-from tensorflow.keras.mixed_precision import experimental as prec
+from tensorflow.keras import mixed_precision as prec
 from tensorflow_probability import distributions as tfd
 
 
@@ -427,7 +427,7 @@ class Adam(tf.Module):
         self._wd = wd
         self._wdpattern = wdpattern
         self._opt = tf.optimizers.Adam(lr)
-        self._opt = prec.LossScaleOptimizer(self._opt, 'dynamic')
+        self._opt = prec.LossScaleOptimizer(self._opt, dynamic = True)
         self._variables = None
 
     @property

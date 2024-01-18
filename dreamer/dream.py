@@ -17,7 +17,7 @@ from agents.gap_follower import GapFollower
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.mixed_precision import experimental as prec
+from tensorflow.keras import mixed_precision as prec
 
 import callbacks as callbacks
 
