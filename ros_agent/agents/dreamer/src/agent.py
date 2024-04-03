@@ -108,15 +108,15 @@ class AgentNode:
         # motor = (float(action['motor']) * 2 + 0.5)
 
         #steering = 0 - float(action['steering'] * (float(self._config_a) / 10) * 0.42) # working better in hardware
-        steering = 0 - float(action['steering'] * 0.6 * 0.42) # working better in hardware
-        # steering = 0 - float(action['steering'] * 0.7 * 0.42) # working better in simulation
+        # steering = 0 - float(action['steering'] * 0.6 * 0.42) # working better in hardware
+        steering = 0 - float(action['steering'] * 0.7 * 0.42) # working better in simulation
         # self._steering = float(self._steering) * 2 / 3 + float(steering) * 1 / 3 # lowpass in hardware
         #div = (self._motor * 1.5) + 0.5
         div = 20
         val = self._config_a
         val = 18 - forward_max * 3
-        self._steering = float(self._steering) * (div - val) / (div) + float(steering) * (val) / (div) # lowpass in hardware
-        # self._steering = float(self._steering) * 1 / 6 + float(steering) * 5 / 6 # lowpass in simulation
+        # self._steering = float(self._steering) * (div - val) / (div) + float(steering) * (val) / (div) # lowpass in hardware
+        self._steering = float(self._steering) * 1 / 6 + float(steering) * 5 / 6 # lowpass in simulation
         # self._steering = float(steering) # direct feed
         #self._steering = self._steering + float(steering) / self._config_a # integrating
         #if self._steering > 0.42:
@@ -151,7 +151,7 @@ class AgentNode:
         drive_msg.header.stamp = rospy.Time.now()
         drive_msg.drive.steering_angle = steering_angle
         drive_msg.drive.speed = speed
-        #print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
+        print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
         return drive_msg
 
     def joy_callback(self, joy_msg):
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('--hardware', help='determine if running on hardware car', default="unset")
     parser.add_argument("--agent", choices=['dreamer', 'ncp'], required=True)
     parser.add_argument("--checkpoint", type=pathlib.Path, required=True, help='directory where pickle files are located')
-    parser.add_argument("--action_repeat", type=int, default=8, help='number of repeatition of the same action')
+    parser.add_argument("--action_repeat", type=int, default=4, help='number of repeatition of the same action')
     parser.add_argument("--time_limit", type=float, default=100.0, help='max time in seconds')
     args = parser.parse_args()
 

@@ -12,7 +12,7 @@ class RacingAgent:
     def __init__(self, algorithm: str, checkpoint_path: pathlib.Path):
         if algorithm == 'dreamer':
             from .dreamer import RacingDreamer
-            actor_version="normalized"
+            actor_version = "default"
             if str(checkpoint_path) == "/cwd/checkpoints/treitlstrasse_dreamer":
                 actor_version = "default"
             self._agent = RacingDreamer(checkpoint_dir=checkpoint_path, actor_version=actor_version)

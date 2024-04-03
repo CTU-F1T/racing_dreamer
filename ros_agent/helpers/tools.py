@@ -28,8 +28,12 @@ class Module(tf.Module):
       pickle.dump(values, f)
 
   def load(self, filename):
+    print("ANCHOR\n")
     with pathlib.Path(filename).open('rb') as f:
       values = pickle.load(f)
+    print("ANCHOR\n")
+    print(values)
+    print("CHANGED1")
     tf.nest.map_structure(lambda x, y: x.assign(y), self.variables, values)
 
   def get(self, name, actor, *args, **kwargs):
