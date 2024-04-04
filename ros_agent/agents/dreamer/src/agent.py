@@ -25,7 +25,7 @@ class AgentNode(Node):
         self.P.motor_min = 1.7
         self.P.link(self.P.motor_min, self.P.motor_max)
 
-        self.P.reconfigure(self)
+        self.P.reconfigure(node = self)
 
         self.hardware = hardware
         self.agent = agent
