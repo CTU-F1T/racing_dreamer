@@ -1,5 +1,6 @@
 from autopsy.node import Node
 from autopsy.core import Core
+from autopsy.reconfigure import ParameterServer
 
 import argparse
 import numpy as np
@@ -18,6 +19,13 @@ class AgentNode(Node):
 
     def __init__(self, hardware, agent, checkpoint):
         super(AgentNode, self).__init__('dreamer_agent')
+
+        self.P = ParameterServer()
+        self.P.motor_max = 5.0
+        self.P.motor_min = 1.7
+        self.P.link(self.P.motor_min, self.P.motor_max)
+
+        self.P.reconfigure(self)
 
         self.hardware = hardware
         self.agent = agent
@@ -114,10 +122,10 @@ class AgentNode(Node):
         #self._motor = self._motor + (float(action['motor']) - 0,44) / 8,7)
         #self._motor = self._motor + (float(action['motor']) - (float(self._config_a)/100)) / (float(self._config_b)/10)
         # self._motor = self._motor + (float(action['motor']) - 0.42) / 5
-        if self._motor > 5:
-            self._motor = 5
-        if self._motor < 1.7:
-            self._motor = 1.7
+        if self._motor > self.P.motor_max:
+            self._motor = self.P.motor_max
+        if self._motor < self.P.motor_min:
+            self._motor = self.P.motor_min
         # self._motor = 1.5
         # motor = (float(action['motor']) * 2 + 0.5)
 
