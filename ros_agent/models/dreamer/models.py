@@ -6,7 +6,7 @@ from tensorflow.keras import mixed_precision as prec
 from tensorflow_probability import layers as tfpl
 
 
-import tools as tools
+import helpers.tools as tools
 
 
 class RSSM(tools.Module):
