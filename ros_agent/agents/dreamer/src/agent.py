@@ -123,9 +123,9 @@ class AgentNode(Node):
         #self._motor = self._motor + (float(action['motor']) - (float(self._config_a)/100)) / (float(self._config_b)/10)
         # self._motor = self._motor + (float(action['motor']) - 0.42) / 5
         if self._motor > self.P.motor_max:
-            self._motor = self.P.motor_max
+            self._motor = self.P.motor_max.value
         if self._motor < self.P.motor_min:
-            self._motor = self.P.motor_min
+            self._motor = self.P.motor_min.value
         # self._motor = 1.5
         # motor = (float(action['motor']) * 2 + 0.5)
 
