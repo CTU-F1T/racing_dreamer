@@ -8,6 +8,7 @@ from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32MultiArray, Header
 from ackermann_msgs.msg import AckermannDriveStamped
+from command_msgs.msg import CommandArrayStamped, Command, CommandParameter
 import pathlib
 
 from models import RacingAgent
@@ -38,6 +39,8 @@ class AgentNode(Node):
         print("=== dreamer node. ===");
         if self.hardware == 'car':
             drive_topic = "/vesc/high_level/ackermann_cmd_mux/input/nav_0"
+        elif self.hardware == 'ctu':
+            drive_topic = "/command"
         elif self.hardware == 'other':
             drive_topic = "/nav"
         else:
@@ -53,7 +56,12 @@ class AgentNode(Node):
         # queue_size=1 --> ROS will discard messages if they arrive faster than they are processed by the callback function
         self._scan_sub = self.Subscriber(scan_topic, LaserScan, self._laserscan_callback, queue_size=1)
         self._joy_sub = self.Subscriber('/vesc/joy', Joy, self.joy_callback, queue_size=1)
-        self._drive_pub = self.Publisher(name=drive_topic, data_class=AckermannDriveStamped, queue_size=1)
+
+        if self.hardware == 'ctu':
+            self._drive_pub = self.Publisher(name=drive_topic, data_class=CommandArrayStamped, queue_size=1)
+        else:
+            self._drive_pub = self.Publisher(name=drive_topic, data_class=AckermannDriveStamped, queue_size=1)
+
         self._ncp_status_pub = self.Publisher(name="/ncp_status", data_class=Float32MultiArray, queue_size=1)
         self._ncp_adj_pub = self.Publisher(name="/ncp_adj", data_class=Float32MultiArray, queue_size=1)
         self._scan_pub = self.Publisher(name="/scan_noised", data_class=LaserScan, queue_size=1)
@@ -136,7 +144,10 @@ class AgentNode(Node):
         print("DREAMER({}) rate {:5.2f}Hz | dur {:4.3f}s | a.motor {:5.2f} | a.steer {:5.2f} | m.vel {:4.3f}m/s | m.steer {:7.3f} | a {:2.0f} | b {:2.0f}".format(self.agent, 1.0/since_last_laserscan, duration, float(action['motor']), float(action['steering']), self._motor, self._steering, self._config_a, self._config_b))
 
         #self._motor = 1.5 # safety for debug
-        drive_msg = self._convert_action(self._steering, self._motor)
+        if self.hardware == 'ctu':
+            drive_msg = self._convert_action_ctu(self._steering, self._motor)
+        else:
+            drive_msg = self._convert_action(self._steering, self._motor)
         #drive_msg = self._convert_action(steering, self._motor)
         self._drive_pub.publish(drive_msg)
 
@@ -157,6 +168,35 @@ class AgentNode(Node):
         drive_msg.header.stamp = rospy.Time.now()
         drive_msg.drive.steering_angle = steering_angle
         drive_msg.drive.speed = speed
+        print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
+        return drive_msg
+
+    def _convert_action_ctu(self, steering_angle, speed) -> CommandArrayStamped:
+        drive_msg = CommandArrayStamped(
+            header = Header(
+                stamp = self.get_clock().now().to_msg(),
+            ),
+            commands = [
+                Command(
+                    command = "speed",
+                    parameters = [
+                        CommandParameter(
+                            parameter = "metric",
+                            value = float(speed),
+                        ),
+                    ]
+                ),
+                Command(
+                    command = "steer",
+                    parameters = [
+                        CommandParameter(
+                            parameter = "rad",
+                            value = float(steering_angle),
+                        ),
+                    ]
+                ),
+            ],
+        )
         print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
         return drive_msg
 
