@@ -1,24 +1,28 @@
-import rospy
+from autopsy.node import Node
+from autopsy.core import Core
+
 import argparse
 import numpy as np
 from sensor_msgs.msg import LaserScan
 from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Header
 from ackermann_msgs.msg import AckermannDriveStamped
 import pathlib
 
 from models import RacingAgent
 
 
-class AgentNode:
+class AgentNode(Node):
 
     def __init__(self, hardware, agent, checkpoint):
+        super(AgentNode, self).__init__('dreamer_agent')
+
         self.hardware = hardware
         self.agent = agent
         self.checkpoint = checkpoint
 
-        self._laserscan_last_time = rospy.Time(0)
+        self._laserscan_last_time = self.Time(0).nanoseconds / 1.e9
         self._motor = 0
         self._steering = 0
 
@@ -47,19 +51,21 @@ class AgentNode:
 
 
         # queue_size=1 --> ROS will discard messages if they arrive faster than they are processed by the callback function
-        self._scan_sub = rospy.Subscriber(scan_topic, LaserScan, self._laserscan_callback, queue_size=1)
-        self._joy_sub = rospy.Subscriber('/vesc/joy', Joy, self.joy_callback, queue_size=1)
-        self._drive_pub = rospy.Publisher(name=drive_topic, data_class=AckermannDriveStamped, queue_size=1)
-        self._ncp_status_pub = rospy.Publisher(name="/ncp_status", data_class=Float32MultiArray, queue_size=1)
-        self._ncp_adj_pub = rospy.Publisher(name="/ncp_adj", data_class=Float32MultiArray, queue_size=1)
-        self._scan_pub = rospy.Publisher(name="/scan_noised", data_class=LaserScan, queue_size=1)
+        self._scan_sub = self.Subscriber(scan_topic, LaserScan, self._laserscan_callback, queue_size=1)
+        self._joy_sub = self.Subscriber('/vesc/joy', Joy, self.joy_callback, queue_size=1)
+        self._drive_pub = self.Publisher(name=drive_topic, data_class=AckermannDriveStamped, queue_size=1)
+        self._ncp_status_pub = self.Publisher(name="/ncp_status", data_class=Float32MultiArray, queue_size=1)
+        self._ncp_adj_pub = self.Publisher(name="/ncp_adj", data_class=Float32MultiArray, queue_size=1)
+        self._scan_pub = self.Publisher(name="/scan_noised", data_class=LaserScan, queue_size=1)
         
     def _laserscan_callback(self, scan_msg: LaserScan):
-        since_last_laserscan = scan_msg.header.stamp - self._laserscan_last_time
-        if since_last_laserscan.to_sec() < (0.08 - 0.001): # limit to approx. 10Hz
+        stamp_time = self.Time(0).from_msg(scan_msg.header.stamp).nanoseconds / 1.e9
+        since_last_laserscan = stamp_time - self._laserscan_last_time
+
+        if since_last_laserscan < (0.08 - 0.001): # limit to approx. 10Hz
             return
 
-        self._laserscan_last_time = scan_msg.header.stamp
+        self._laserscan_last_time = stamp_time
         #print('dreamer received LIDAR scan @ rate:', since_last_laserscan.to_sec())
         observation = dict()
         observation['lidar'] = np.flip(np.array(scan_msg.ranges))
@@ -73,7 +79,7 @@ class AgentNode:
 
         observation['lidar'] = obs_lidar # + extra_noise # this would add extra gaussian noise
         scan_noised = scan_msg
-        scan_noised.ranges = np.flip(observation['lidar'])
+        scan_noised.ranges = np.flip(observation['lidar']).tolist()
         self._scan_pub.publish(scan_noised)
 
         proc_ranges = np.array(obs_lidar)
@@ -83,12 +89,12 @@ class AgentNode:
         forward_max = max(proc_ranges[int(1080/2 - 150):int(1080/2 + 150)])
         #print("min = ", np.min(obs_lidar), " max = ", np.max(obs_lidar), " forward_max = ", forward_max)
 
-        before = rospy.Time.now()
+        before = self.Time.now().nanoseconds
         #print("before action ", before)
         #action = {'motor': 0, 'steering': 0};
         action, self._dreamer_state = self._agent.action(observation, self._dreamer_state)
-        after = rospy.Time.now()
-        duration = after - before
+        after = self.Time.now().nanoseconds
+        duration = (after - before) / 1.e9
         #print("after action ", after, " duration ", after - before)
         #print("action = ", action)
         #print("state = ", state);
@@ -127,7 +133,7 @@ class AgentNode:
         #if self._joy_msg.axes[6] > 0.5: # add pertubation
         #    self._steering = 0.2
 
-        print("DREAMER({}) rate {:5.2f}Hz | dur {:4.3f}s | a.motor {:5.2f} | a.steer {:5.2f} | m.vel {:4.3f}m/s | m.steer {:7.3f} | a {:2.0f} | b {:2.0f}".format(self.agent, 1000000000.0/since_last_laserscan.to_nsec(), duration.to_sec(), float(action['motor']), float(action['steering']), self._motor, self._steering, self._config_a, self._config_b))
+        print("DREAMER({}) rate {:5.2f}Hz | dur {:4.3f}s | a.motor {:5.2f} | a.steer {:5.2f} | m.vel {:4.3f}m/s | m.steer {:7.3f} | a {:2.0f} | b {:2.0f}".format(self.agent, 1.0/since_last_laserscan, duration, float(action['motor']), float(action['steering']), self._motor, self._steering, self._config_a, self._config_b))
 
         #self._motor = 1.5 # safety for debug
         drive_msg = self._convert_action(self._steering, self._motor)
@@ -176,15 +182,20 @@ class AgentNode:
 
         self._joy_msg = joy_msg;
 
-if __name__ == '__main__':
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--hardware', help='determine if running on hardware car', default="unset")
     parser.add_argument("--agent", choices=['dreamer', 'ncp'], required=True)
     parser.add_argument("--checkpoint", type=pathlib.Path, required=True, help='directory where pickle files are located')
     parser.add_argument("--action_repeat", type=int, default=4, help='number of repeatition of the same action')
     parser.add_argument("--time_limit", type=float, default=100.0, help='max time in seconds')
-    args = parser.parse_args()
+    args, ros_args = parser.parse_known_args()
 
-    rospy.init_node('dreamer_agent', anonymous=True)
+    Core.init(args = ros_args)
     agent = AgentNode(args.hardware, args.agent, args.checkpoint)
-    rospy.spin()
+    Core.spin(agent)
+
+
+if __name__ == '__main__':
+    main()

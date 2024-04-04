@@ -55,6 +55,8 @@
   <exec_depend condition="$ROS_VERSION == 1">rospy</exec_depend>
   <exec_depend condition="$ROS_VERSION == 2">rclpy</exec_depend>
 
+  <exec_depend>autopsy</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
