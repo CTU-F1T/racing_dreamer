@@ -18,7 +18,7 @@ class RewardModifier(Wrapper):
 
     def step(self, action):
         """Modifies the reward using :meth:`self.reward` after the environment :meth:`env.step`."""
-        sleep(0.00001)
+        # sleep(0.00001)
         observation, reward, done, info = self.env.step(action)
         # print(action['motor'])
         self.base_reward += reward
