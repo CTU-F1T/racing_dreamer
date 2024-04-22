@@ -1,0 +1,21 @@
+(make) AGENT_NAME: "dreamer"
+(make) AGENT_SELECT: "dreamer"
+(make) AGENT_CHECKPOINT: "colombia_my_best"
+docker run -it --name=f1tenth_agent_dreamer_container --rm --net=host -v /home/marek/catkin_ws/src/racing_dreamer/ros_agent:/cwd \
+--env AGENT_NAME=dreamer \
+--env AGENT_SELECT=dreamer \
+--env AGENT_CHECKPOINT=colombia_my_best \
+tuwcps/arc_agent_ros:dreamer
+-------------------- entrypoint.sh debug info follows. --------------------
+AGENT_NAME = dreamer
+'/cwd/agents/dreamer/src/agent.py' -> '/ws/src/f1tenth_agent_ros/src/agent.py'
+EXTRA_ARGS =  --agent=dreamer --checkpoint=/cwd/checkpoints/colombia_my_best --hardware=other
+@ = /bin/bash -c python3 ./src/f1tenth_agent_ros/src/agent.py
+-------------------- entrypoint.sh done, executing command. --------------------
+Unable to register with master node [http://localhost:11311]: master may not be running yet. Will keep trying.
+^[[A^C^C^CTraceback (most recent call last):
+  File "./src/f1tenth_agent_ros/src/agent.py", line 188, in <module>
+    rospy.init_node('dreamer_agent', anonymous=True)
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/client.py", line 336, in init_node
+    raise rospy.exceptions.ROSInitException("Failed to initialize time. Please check logs for additional details")
+rospy.exceptions.ROSInitException: Failed to initialize time. Please check logs for additional details
