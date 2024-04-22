@@ -21,9 +21,15 @@ def choose_agent(name: str, param_file: Optional[str], checkpoint_path: str):
     elif name == 'ppo':
         from stable_baselines3.ppo import PPO
         constructor = partial(PPO, policy='MlpPolicy', verbose=1, **params)
-    elif name == 'lstm-ppo':
-        from stable_baselines.ppo2 import PPO2
-        constructor = partial(PPO2, policy='MlpLstmPolicy', verbose=1, nminibatches=1, **params)
+    elif name == 'td3':
+        from stable_baselines3.td3 import TD3
+        from stable_baselines3.common.noise import NormalActionNoise
+        import numpy as np
+        action_noise = NormalActionNoise(mean=np.zeros(2), sigma=0.1 * np.ones(2))
+        constructor = partial(TD3, policy='MlpPolicy', verbose=1, action_noise=action_noise, **params)
+    # elif name == 'lstm-ppo':
+    #     from stable_baselines.ppo2 import PPO2
+    #     constructor = partial(PPO2, policy='MlpLstmPolicy', verbose=1, nminibatches=1, **params)
     else:
         raise NotImplementedError(name)
     return constructor
@@ -37,7 +43,7 @@ def make_experiment(args, logdir):
         training_time_limit=args.training_time_limit,
         eval_time_limit=args.eval_time_limit
     )
-    if args.agent in ['ppo', 'sac']:
+    if args.agent in ['ppo', 'sac', 'td3']:
         version = 3
     elif args.agent in ['lstm-ppo']:
         version = 2

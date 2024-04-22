@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a single agent experiment optimizing the progress based reward.')
     parser.add_argument('--track', type=str, choices=['austria', 'columbia', 'treitlstrasse_v2'], required=True)
     parser.add_argument('--task', type=str, choices=['max_progress', 'max_speed'], required=True)
-    parser.add_argument('--agent', type=str, choices=['d4pg', 'mpo', 'sac', 'ppo', 'lstm-ppo', 'lstm-mpo'], required=True)
+    parser.add_argument('--agent', type=str, choices=['d4pg', 'mpo', 'sac', 'ppo', 'lstm-ppo', 'lstm-mpo', 'td3'], required=True)
     parser.add_argument('--seed', type=int, required=False, default=random.randint(0, 100_000_000))
     parser.add_argument('--steps', type=int, required=True)
     parser.add_argument('--params', type=str, required=False, help='Path to hyperparam file. If none specified, default params are loaded.')

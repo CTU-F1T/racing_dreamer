@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--study_name', type=str, required=True)
     parser.add_argument('--track', type=str, choices=['austria', 'columbia', 'treitlstrasse_v2'], required=True)
     parser.add_argument('--task', type=str, choices=['max_progress', 'max_speed'], required=True)
-    parser.add_argument('--agent', type=str, choices=['d4pg', 'mpo', 'sac', 'ppo', 'lstm-ppo', 'lstm-mpo'], required=True)
+    parser.add_argument('--agent', type=str, choices=['d4pg', 'mpo', 'sac', 'ppo', 'lstm-ppo', 'lstm-mpo', 'td3'], required=True)
     parser.add_argument('--tunable_params', type=str, required=True, help='Path to file containing parameters to tune.')
     parser.add_argument('--default_params', type=str, required=True, help='Path to file containing parameters to tune.')
     parser.add_argument('--steps', type=int, required=True, help='Max. number of steps per trial.')

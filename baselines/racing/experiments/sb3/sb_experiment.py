@@ -12,6 +12,7 @@ from racecar_gym.envs import ChangingTrackSingleAgentRaceEnv
 from racing.environment import FixedResetMode
 from racing.environment.single_agent import *
 from racing.experiments.sb3.callbacks import make_callback
+from racing.experiments.sb3.reward_modifier import RewardModifier
 
 
 class SingleAgentExperiment:
@@ -33,6 +34,7 @@ class SingleAgentExperiment:
         self.test_env = self._wrap_test(env=self._make_env(tracks=self._test_tracks))
         self._seed = seed
         self._version = version
+        print("SINGLE AGENT CREATED-----------------------------")
 
     def _set_seed(self, seed):
         np.random.seed(seed)
@@ -40,6 +42,7 @@ class SingleAgentExperiment:
         os.environ['PYTHONHASHSEED'] = str(seed)
 
     def _wrap_training(self, env: gym.Env):
+        env = RewardModifier(env)
         env = FilterObservation(env, filter_keys=['lidar'])
         env = Flatten(env, flatten_obs=True, flatten_actions=True)
         env = NormalizeObservations(env)
@@ -49,6 +52,7 @@ class SingleAgentExperiment:
         return env
 
     def _wrap_test(self, env: gym.Env):
+        env = RewardModifier(env)
         env = FilterObservation(env, filter_keys=['lidar'])
         env = Flatten(env, flatten_obs=False, flatten_actions=True)
         env = NormalizeObservations(env)
@@ -64,7 +68,7 @@ class SingleAgentExperiment:
         return env
 
     def evaluate(self, model, env, n_eval_episodes: int, deterministic=True):
-
+        print("RUN EVALUATE ---------------------------")
         episode_rewards, episode_lengths, max_progresses = [], [], []
         for i in range(n_eval_episodes):
             dnf = False

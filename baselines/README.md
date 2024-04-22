@@ -39,7 +39,7 @@ You can call it with the following parameters:
 python run_experiments.py \
     --track <austria|columbia|treitlstrasse_v2> \
     --task <max_progress|max_speed> \
-    --agent <mpo|d4pg|sac|ppo|ppo-lstm> \
+    --agent <mpo|d4pg|sac|ppo|ppo-lstm|td3> \
     --params <path to hyperparamfile> \ 
     --steps <steps> \
     --eval_interval <eval_interval> \

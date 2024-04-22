@@ -117,7 +117,7 @@ def make_callback(version=3, **kwargs):
 
                     if not dnf[track]:
                         progress = info['progress']
-                        lap =  info['lap']
+                        lap = info['lap']
                         if len(self.tracks) == 1:
                             max_progress['progress'] = max(max_progress['progress'], progress + lap - 1)
                         else:
