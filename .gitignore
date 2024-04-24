@@ -133,3 +133,5 @@ dmypy.json
 
 environment_loop/
 .DS_Store
+baselines/logs
+dreamer/logs

@@ -3,7 +3,7 @@ tensorflow_probability==0.20.0
 numpy==1.22.0
 gym==0.19.0
 dm-tree==0.1.8
--e git+https://github.com/axelbr/racecar_gym.git@icra22#egg=racecar_gym
+-e git+https://github.com/CTU-F1T/racecar_gym.git@marek_changes#egg=racecar_gym
 tensorflow-plot==0.3.2
 pandas==2.0.0
 matplotlib==3.3.4
