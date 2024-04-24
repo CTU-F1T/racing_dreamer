@@ -4,6 +4,8 @@ from typing import Optional, Dict
 from racing.experiments.sb3.sb_experiment import SingleAgentExperiment
 from racing.experiments.util import read_hyperparams
 
+import torch
+
 
 def choose_agent(name: str, param_file: Optional[str], checkpoint_path: str):
     if param_file:
@@ -52,5 +54,5 @@ def make_experiment(args, logdir):
 
     experiment = SingleAgentExperiment(env_config=env_config, seed=args.seed, logdir=logdir, version=version)
     agent_ctor = choose_agent(name=args.agent, param_file=args.params, checkpoint_path=checkpoint_path)
-        #torch.set_num_threads(1)
+	#torch.set_num_threads(1)
 	return experiment, agent_ctor
