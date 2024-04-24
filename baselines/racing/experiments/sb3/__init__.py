@@ -54,5 +54,5 @@ def make_experiment(args, logdir):
 
     experiment = SingleAgentExperiment(env_config=env_config, seed=args.seed, logdir=logdir, version=version)
     agent_ctor = choose_agent(name=args.agent, param_file=args.params, checkpoint_path=checkpoint_path)
-	#torch.set_num_threads(1)
-	return experiment, agent_ctor
+    torch.set_num_threads(1)
+    return experiment, agent_ctor
