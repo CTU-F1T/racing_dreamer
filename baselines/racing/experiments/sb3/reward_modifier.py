@@ -15,6 +15,7 @@ class RewardModifier(Wrapper):
     stop_penalty = 0
     static_penalty = 0
     base_reward = 0
+    counter = 3
 
     def step(self, action):
         """Modifies the reward using :meth:`self.reward` after the environment :meth:`env.step`."""
