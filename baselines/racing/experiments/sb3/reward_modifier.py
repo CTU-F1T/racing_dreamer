@@ -38,6 +38,11 @@ class RewardModifier(Wrapper):
             self.static_penalty -= 10
             done = True
 
+        self.counter += 1
+        if self.counter >= 4:
+            sleep(0.005)
+            self.counter = 0
+
         return observation, reward, done, info
 
     def reset(self, **kwargs):
