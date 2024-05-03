@@ -1,10 +1,10 @@
 from typing import Union, List, Dict
-import gym
+import gymnasium
 import yaml
-import gym.wrappers as gym_wrappers
+import gymnasium.wrappers as gym_wrappers
 
 
-def wrap_env(env: gym.Env, wrapper_configs: Union[str, List[Dict]]) -> gym.Env:
+def wrap_env(env: gymnasium.Env, wrapper_configs: Union[str, List[Dict]]) -> gymnasium.Env:
     if isinstance(wrapper_configs, str):
         with open(wrapper_configs, 'r') as file:
             wrapper_configs = yaml.safe_load(file)

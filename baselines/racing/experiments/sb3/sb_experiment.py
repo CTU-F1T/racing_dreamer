@@ -3,15 +3,18 @@ import random
 from dataclasses import dataclass
 from typing import List, Callable
 
-import gym
+import gymnasium
 import numpy as np
-from gym.wrappers import TimeLimit, FilterObservation
+from gymnasium.wrappers import TimeLimit, FilterObservation
+
 from racecar_gym import SingleAgentScenario
-from racecar_gym.envs import ChangingTrackSingleAgentRaceEnv
+from racecar_gym.envs.gym_api import ChangingTrackSingleAgentRaceEnv, SingleAgentRaceEnv, MultiAgentRaceEnv
 
 from racing.environment import FixedResetMode
 from racing.environment.single_agent import *
 from racing.experiments.sb3.callbacks import make_callback
+from racing.experiments.sb3.reward_modifier import RewardModifier
+#from racing.experiments.sb3.filter_fix import FilterObservation
 
 
 class SingleAgentExperiment:
@@ -29,8 +32,8 @@ class SingleAgentExperiment:
         self._train_tracks, self._test_tracks = [env_config.track], [env_config.track]
         self._logdir = logdir
         self._env_config = env_config
-        self.train_env = self._wrap_training(self._make_env(tracks=self._train_tracks))
-        self.test_env = self._wrap_test(env=self._make_env(tracks=self._test_tracks))
+        self.train_env = self._wrap_training(self._make_env(tracks=self._train_tracks, render_mode=None))
+        self.test_env = self._wrap_test(self._make_env(tracks=self._test_tracks, render_mode=None))
         self._seed = seed
         self._version = version
 
@@ -39,32 +42,36 @@ class SingleAgentExperiment:
         random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
 
-    def _wrap_training(self, env: gym.Env):
+    def _wrap_training(self, env: gymnasium.Env):
+        env = RewardModifier(env)
         env = FilterObservation(env, filter_keys=['lidar'])
         env = Flatten(env, flatten_obs=True, flatten_actions=True)
         env = NormalizeObservations(env)
         env = FixedResetMode(env, mode='random')
         env = TimeLimit(env, max_episode_steps=self._env_config.training_time_limit)
         env = ActionRepeat(env, n=self._env_config.action_repeat)
+        env = ReduceActionSpace(env, low=[0.005, -1.0], high=[1.0, 1.0])
         return env
 
-    def _wrap_test(self, env: gym.Env):
+    def _wrap_test(self, env: gymnasium.Env):
+        env = RewardModifier(env)
         env = FilterObservation(env, filter_keys=['lidar'])
-        env = Flatten(env, flatten_obs=False, flatten_actions=True)
+        env = Flatten(env, flatten_obs=True, flatten_actions=True)
         env = NormalizeObservations(env)
         env = FixedResetMode(env, mode='grid')
         env = TimeLimit(env, max_episode_steps=self._env_config.eval_time_limit)
         env = ActionRepeat(env, n=self._env_config.action_repeat)
+        env = ReduceActionSpace(env, low=[0.005, -1.0], high=[1.0, 1.0])
         return env
 
-    def _make_env(self, tracks: List[str]):
-        scenarios = [SingleAgentScenario.from_spec(f'scenarios/{self._env_config.task}/{track}.yml', rendering=False)
+    def _make_env(self, tracks: List[str], render_mode: str = None):
+        scenarios = [f'scenarios/{self._env_config.task}/{track}.yml'
                      for track in tracks]
-        env = ChangingTrackSingleAgentRaceEnv(scenarios=scenarios, order='sequential')
+        env = ChangingTrackSingleAgentRaceEnv(scenarios=scenarios, order='sequential', render_mode=render_mode)
+        # env = MultiAgentRaceEnv(scenario=scenarios[0], render_mode=render_mode)
         return env
 
-    def evaluate(self, model, env, n_eval_episodes: int, deterministic=True):
-
+    def evaluate(self, model, env, n_eval_episodes: int, deterministic=False):
         episode_rewards, episode_lengths, max_progresses = [], [], []
         for i in range(n_eval_episodes):
             dnf = False
@@ -103,8 +110,8 @@ class SingleAgentExperiment:
                                       log_path=self._logdir,
                                       eval_freq=eval_every_steps // self._env_config.action_repeat,
                                       render_freq=(10 * eval_every_steps) // self._env_config.action_repeat,
-                                      deterministic=True,
-                                      render=True
+                                      deterministic=False,
+                                      render=False
                                       )
         print('Logging directory: ', self._logdir)
         model = self.configure_agent(agent_ctor)
@@ -113,7 +120,6 @@ class SingleAgentExperiment:
 
     def configure_agent(self, agent_ctor):
         return agent_ctor(env=self.train_env, seed=self._seed, tensorboard_log=f'{self._logdir}')
-
 
     def run_trial(self, agent, steps):
         agent.learn(steps)

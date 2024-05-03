@@ -12,7 +12,7 @@ def objective(trial):
 def choose_objective(args) -> Callable[[Trial], float]:
     if args.agent in ['mpo', 'd4pg']:
         return objective
-    elif args.agent in ['sac', 'ppo']:
+    elif args.agent in ['sac', 'ppo', 'td3']:
         pass
     else:
         raise NotImplementedError(args.agent)

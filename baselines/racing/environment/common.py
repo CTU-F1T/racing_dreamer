@@ -1,5 +1,5 @@
-import gym
-from gym import Wrapper
+import gymnasium
+from gymnasium import Wrapper
 
 
 class Vectorized(Wrapper):
@@ -17,23 +17,24 @@ class Vectorized(Wrapper):
         return obs[0]
 
     def render(self, mode='human', agent: str = None, **kwargs):
-        images = self.env.render(mode=mode, agents=[agent])
+        images = self.env.render()
         return images[0]
 
-class FixedResetMode(gym.Wrapper):
+class FixedResetMode(gymnasium.Wrapper):
     def __init__(self, env, mode: str):
         super().__init__(env)
         self._mode = mode
 
     def reset(self, **kwargs):
-        return self.env.reset(mode=self._mode, **kwargs)
+        # kwargs['options'] = {"mode": self._mode}
+        return self.env.reset(**kwargs)
 
-class InfoToObservation(gym.Wrapper):
+class InfoToObservation(gymnasium.Wrapper):
     def __init__(self, env):
         super().__init__(env)
 
     def step(self, action):
-        obs, reward, done, info = super().step(action)
+        obs, reward, done, truncated, info = super().step(action)
         for k, v in info.items():
             obs[f'info_{k}'] = v
-        return obs, reward, done, info
+        return obs, reward, done, truncated, info

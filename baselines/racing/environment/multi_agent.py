@@ -1,8 +1,8 @@
 from typing import Dict, Any, Collection, List, Union
 
-import gym
-from gym import Wrapper, Env, ObservationWrapper
-from gym.spaces import Box
+import gymnasium
+from gymnasium import Wrapper, Env, ObservationWrapper
+from gymnasium.spaces import Box
 import numpy as np
 
 class Flatten(Wrapper):
@@ -10,50 +10,51 @@ class Flatten(Wrapper):
     def __init__(self, env: Env, flatten_obs=True, flatten_actions=True):
         super(Flatten, self).__init__(env)
         if flatten_obs:
-            obs_space = dict((id, gym.spaces.flatten_space(env.observation_space[id])) for id in env.observation_space.spaces)
-            self.observation_space = gym.spaces.Dict(spaces=obs_space)
+            obs_space = dict((id, gymnasium.spaces.flatten_space(env.observation_space[id])) for id in env.observation_space.spaces)
+            self.observation_space = gymnasium.spaces.Dict(spaces=obs_space)
         if flatten_actions:
             spaces = dict([
-                (id, gym.spaces.flatten_space(env.action_space[id]))
+                (id, gymnasium.spaces.flatten_space(env.action_space[id]))
                 for id
                 in env.action_space.spaces
             ])
             for k in spaces:
                 spaces[k] = Box(low=-1.0, high=1.0, shape=spaces[k].shape)
 
-            self.action_space = gym.spaces.Dict(spaces=spaces)
+            self.action_space = gymnasium.spaces.Dict(spaces=spaces)
 
 
     def step(self, action: Dict):
         actions = {}
         for id in action.keys():
             actions[id] = np.clip(action[id], self.action_space[id].low, self.action_space[id].high)
-            actions[id] = gym.spaces.unflatten(self.env.action_space[id], actions[id])
+            actions[id] = gymnasium.spaces.unflatten(self.env.action_space[id], actions[id])
         obs, reward, done, info = self.env.step(actions)
         for id in obs:
-            obs[id] = gym.spaces.flatten(self.env.observation_space[id], obs[id])
+            obs[id] = gymnasium.spaces.flatten(self.env.observation_space[id], obs[id])
         return obs, reward, done, info
 
     def reset(self, **kwargs):
+        print("MultiAgent - Flatten - reset")
         obs = self.env.reset(**kwargs)
         for id in obs:
-            obs[id] = gym.spaces.flatten(self.env.observation_space[id], obs[id])
+            obs[id] = gymnasium.spaces.flatten(self.env.observation_space[id], obs[id])
         return obs
 
 class NormalizeObservations(ObservationWrapper):
 
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: gymnasium.Env):
         super().__init__(env)
         spaces = {}
         self._scalers = {}
         for id in env.observation_space.spaces.keys():
-            spaces[id] = gym.spaces.Box(
+            spaces[id] = gymnasium.spaces.Box(
                 low=np.zeros(env.observation_space[id].shape),
                 high=np.ones(env.observation_space[id].shape),
                 dtype=env.observation_space[id].dtype
             )
             self._scalers[id] = 1.0 / (spaces[id].high - spaces[id].low)
-        self.observation_space = gym.spaces.Dict(spaces)
+        self.observation_space = gymnasium.spaces.Dict(spaces)
 
     def observation(self, observation):
         obs = {}
@@ -105,8 +106,8 @@ class FilterObservation(ObservationWrapper):
         for id in env.observation_space.spaces:
             agent_space = env.observation_space.spaces[id]
             agent_keys = self._filter_keys[id]
-            obs_space[id] = gym.spaces.Dict(spaces=dict((k, agent_space.spaces[k]) for k in agent_keys))
-        self.observation_space = gym.spaces.Dict(spaces=obs_space)
+            obs_space[id] = gymnasium.spaces.Dict(spaces=dict((k, agent_space.spaces[k]) for k in agent_keys))
+        self.observation_space = gymnasium.spaces.Dict(spaces=obs_space)
 
     def observation(self, observation):
         filter_observation = self._filter_observation(observation)

@@ -36,6 +36,8 @@ ENV LC_ALL C.UTF-8
 
 ENV ROS_DISTRO noetic
 
+ENV SETUPTOOLS_USE_DISTUTILS stdlib
+
 # install ros packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.6 \
@@ -43,12 +45,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # ###################
+RUN echo python3 --version
 
 RUN mkdir -p /ws/src/f1tenth_agent_ros/
 WORKDIR /ws/src/f1tenth_agent_ros/
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    python3.6 python3.6-dev python3-pip git wget unzip make gcc g++ \
+    python3.6 python3.6-dev python3.6-pip python3.6-distutils python3.6-setuptools git wget unzip make gcc g++ \
     libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev liblapack-dev libblas-dev gfortran
 #    rm -rf /var/lib/apt/lists/*
 

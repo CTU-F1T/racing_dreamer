@@ -1,18 +1,18 @@
-import gym
+import gymnasium as gym
 import numpy as np
 from PIL import Image
 from scipy import ndimage
-from racecar_gym.envs.multi_agent_race import MultiAgentScenario, MultiAgentRaceEnv
+from racecar_gym.envs.gym_api.multi_agent_race import MultiAgentScenario, MultiAgentRaceEnv
 
 envs = {}
 
 
 class RaceCarBaseEnv:
-    def __init__(self, track, task, rendering=False):
+    def __init__(self, track, task, render_mode=None, render_options=None):
         env_id = track
         if env_id not in envs.keys():
-            scenario = MultiAgentScenario.from_spec(f"scenarios/{task}/{track}.yml", rendering=rendering)
-            envs[env_id] = MultiAgentRaceEnv(scenario=scenario)
+            # scenario = MultiAgentScenario.from_spec(f"scenarios/{task}/{track}.yml", rendering=rendering)
+            envs[env_id] = MultiAgentRaceEnv(scenario=f"scenarios/{task}/{track}.yml", render_mode=render_mode, render_options=render_options)
         self._env = envs[env_id]
 
     def __getattr__(self, name):
@@ -61,20 +61,20 @@ class RaceCarWrapper:
 
     def step(self, actions):
         actions = {i: {'motor': actions[i][0], 'steering': actions[i][1]} for i in self.agent_ids}
-        obs, reward, done, info = self._env.step(actions)
+        obs, reward, done, truncated, info = self._env.step(actions)
         for agent_id in self.agent_ids:
             obs[agent_id]['speed'] = np.linalg.norm(info[agent_id]['velocity'][:3])
             if 'low_res_camera' in obs[agent_id]:
                 obs[agent_id]['image'] = obs[agent_id]['low_res_camera']
-        return obs, reward, done, info
+        return obs, reward, done, truncated, info
 
     def reset(self, **kwargs):
-        obs = self._env.reset(**kwargs)
+        obs, state = self._env.reset(**kwargs)
         for agent_id in self.agent_ids:
             obs[agent_id]['speed'] = 0.0
             if 'low_res_camera' in obs[agent_id]:
                 obs[agent_id]['image'] = obs[agent_id]['low_res_camera']
-        return obs
+        return obs, state
 
     def render(self, **kwargs):
         return self._env.render(**kwargs)
@@ -89,7 +89,10 @@ class FixedResetMode:
         self._mode = mode
 
     def reset(self):
-        return self._env.reset(mode=self._mode)
+        # print("FIXED RESET -------:")
+        # print(type(self._mode))
+        # print(self._mode)
+        return self._env.reset(options={"mode": self._mode})
 
     def __getattr__(self, name):
         return getattr(self._env, name)
@@ -109,11 +112,12 @@ class ActionRepeat:
         dones = {agent_id: False for agent_id in self._env.agent_ids}
         total_rewards = {agent_id: 0.0 for agent_id in self._env.agent_ids}
         current_step = 0
+        truncated = False
         while current_step < self._amount and not any(dones.values()):
-            obs, rewards, dones, info = self._env.step(action)
+            obs, rewards, dones, truncated, info = self._env.step(action)
             total_rewards = {agent_id: total_rewards[agent_id] + rewards[agent_id] for agent_id in self._env.agent_ids}
             current_step += 1
-        return obs, total_rewards, dones, info
+        return obs, total_rewards, dones, truncated, info
 
 
 class ReduceActionSpace:
@@ -146,12 +150,12 @@ class TimeLimit:
 
     def step(self, action):
         assert self._step is not None, 'Must reset environment.'
-        obs, rewards, dones, info = self._env.step(action)
+        obs, rewards, dones, truncated, info = self._env.step(action)
         self._step += 1
         if self._step >= self._duration:
             dones = {agent_id: True for agent_id in self._env.agent_ids}
             self._step = None
-        return obs, rewards, dones, info
+        return obs, rewards, dones, truncated, info
 
     def reset(self):
         self._step = 0
@@ -160,39 +164,34 @@ class TimeLimit:
 
 class Render:
 
-    def __init__(self, env, callbacks=None, follow_view=False):
+    def __init__(self, env, callbacks=None):
         self._env = env
         self._callbacks = callbacks or ()
-        self._follow_view = follow_view
         self._reset_videos_dict()
 
     def _reset_videos_dict(self):
         self._videos = {'birds_eye-A': []}  # by default: store birds-eye view on first agent
-        if self._follow_view:  # optional: store follow-view from each agent
-            for agent_id in self._env.agent_ids:
-                self._videos[f'follow-{agent_id}'] = []
 
     def __getattr__(self, name):
         return getattr(self._env, name)
 
     def step(self, action):
-        obss, reward, dones, info = self._env.step(action)
+        obss, reward, dones, truncated, info = self._env.step(action)
         for k in self._videos.keys():
-            mode, agent = k.split('-')
-            frame = self._env.render(mode=mode, agent=agent)
+            frame = self._env.render()
+            print(frame)
             self._videos[k].append(frame)
         if any(dones.values()):
             for callback in self._callbacks:
                 callback(self._videos)
-        return obss, reward, dones, info
+        return obss, reward, dones, truncated, info
 
     def reset(self):
-        obs = self._env.reset()
+        obs, state = self._env.reset()
         for k in self._videos.keys():
-            mode, agent = k.split('-')
-            frame = self._env.render(mode=mode, agent=agent)
+            frame = self._env.render()
             self._videos[k] = [frame]
-        return obs
+        return obs, state
 
 
 class Collect:
@@ -208,7 +207,7 @@ class Collect:
         return getattr(self._env, name)
 
     def step(self, action):
-        obss, reward, dones, info = self._env.step(action)
+        obss, reward, dones, truncated, info = self._env.step(action)
         obss = {agent_id: {k: self._convert(v) for k, v in obs.items()} for agent_id, obs in obss.items()}
         transition = obss.copy()
         for i, agent_id in enumerate(obss.keys()):
@@ -223,10 +222,10 @@ class Collect:
             episodes = [{k: self._convert(v) for k, v in episode.items()} for episode in episodes]
             for callback in self._callbacks:
                 callback(episodes)
-        return obss, reward, dones, info
+        return obss, reward, dones, truncated, info
 
     def reset(self):
-        obs = self._env.reset()
+        obs, state = self._env.reset()
         transition = obs.copy()
         for i, agent_id in enumerate(obs.keys()):
             transition[agent_id]['action'] = np.zeros(self._env.action_space[agent_id].shape)
@@ -235,7 +234,7 @@ class Collect:
             transition[agent_id]['progress'] = -1.0
             transition[agent_id]['time'] = 0.0
             self._episodes[i] = [transition[agent_id]]
-        return obs
+        return obs, state
 
     def _convert(self, value):
         value = np.array(value)
@@ -303,9 +302,9 @@ class ObsDict:
         return obs, reward, done, info
 
     def reset(self):
-        obs = self._env.reset()
+        obs, state = self._env.reset()
         obs = {self._key: np.array(obs)}
-        return obs
+        return obs, state
 
 
 class OneHotAction:
@@ -364,9 +363,9 @@ class RewardObs:
         return obs, reward, done, info
 
     def reset(self):
-        obs = self._env.reset()
+        obs, state = self._env.reset()
         obs['reward'] = 0.0
-        return obs
+        return obs, state
 
 
 class OccupancyMapObs:
@@ -389,7 +388,7 @@ class OccupancyMapObs:
 
     def step(self, action):
 
-        obs, reward, done, info = self._env.step(action)
+        obs, reward, done, truncated, info = self._env.step(action)
         # neigh occupancy map for reconstruction
         for agent_id in self._env.agent_ids:
             pose = info[agent_id]['pose']
@@ -405,10 +404,10 @@ class OccupancyMapObs:
             cropped = np.array(Image.fromarray(cropped).resize(size=self._map_size[:2]))  # resize as 2d image
             cropped = np.expand_dims(cropped, axis=-1)  # add last channel
             obs[agent_id]['lidar_occupancy'] = cropped
-        return obs, reward, done, info
+        return obs, reward, done, truncated, info
 
     def reset(self, **kwargs):
-        obs = self._env.reset(**kwargs)
+        obs, state = self._env.reset(**kwargs)
         for agent_id in self._env.agent_ids:
             obs[agent_id]['lidar_occupancy'] = np.zeros(self._map_size, dtype=np.uint8)
-        return obs
+        return obs, state

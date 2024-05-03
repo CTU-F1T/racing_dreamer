@@ -1,7 +1,7 @@
-import gym
-from gym import spaces, Wrapper, Env, ObservationWrapper
+import gymnasium
+from gymnasium import spaces, Wrapper, Env, ObservationWrapper
 import numpy as np
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 
 class SingleAgentWrapper(Wrapper):
@@ -29,15 +29,15 @@ class ActionRepeat(Wrapper):
         super().__init__(env)
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, done, truncated, info = self.env.step(action)
         total_reward = reward
         for _ in range(self._repeat - 1):
-            obs, reward, done, info = self.env.step(action)
+            obs, reward, done, truncated, info = self.env.step(action)
             total_reward += reward
             if done:
                 break
 
-        return obs, total_reward, done, info
+        return obs, total_reward, done, truncated, info
 
 
 class Flatten(Wrapper):
@@ -54,35 +54,38 @@ class Flatten(Wrapper):
 
     def step(self, action):
         action = np.clip(action, self.action_space.low, self.action_space.high)
+        # action = np.clip(action, [-1, -1], [1, 1])
         if self._flatten_actions:
             action = spaces.unflatten(self.env.action_space, action)
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, done, truncated, info = self.env.step(action)
         if self._flatten_obs:
             obs = spaces.flatten(self.env.observation_space, obs)
-        return obs, reward, done, info
+        # print(obs)
+        return obs, reward, done, truncated, info
 
     def reset(self, **kwargs):
         if self._flatten_obs:
-            return spaces.flatten(self.env.observation_space, self.env.reset(**kwargs))
+            state = self.env.reset(**kwargs)
+            return spaces.flatten(self.env.observation_space, state[0]), state[1]
         else:
             return self.env.reset(**kwargs)
 
 
 class NormalizeObservations(ObservationWrapper):
 
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: gymnasium.Env):
         super().__init__(env)
         if isinstance(env.observation_space, spaces.Dict):
             obs_spaces = []
             self._scaler = dict()
             for name, space in env.observation_space.spaces.items():
                 obs_spaces.append(
-                    (name, gym.spaces.Box(low=np.zeros(space.shape), high=np.ones(space.shape), dtype=space.dtype)))
+                    (name, gymnasium.spaces.Box(low=np.zeros(space.shape), high=np.ones(space.shape), dtype=space.dtype)))
                 self._scaler[name] = 1.0 / (space.high - space.low)
             self.observation_space = spaces.Dict(obs_spaces)
 
         elif isinstance(env.observation_space, spaces.Box):
-            self.observation_space = gym.spaces.Box(
+            self.observation_space = gymnasium.spaces.Box(
                 low=np.zeros(env.observation_space.shape),
                 high=np.ones(env.observation_space.shape),
                 dtype=env.observation_space.dtype

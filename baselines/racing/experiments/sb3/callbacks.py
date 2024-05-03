@@ -1,10 +1,12 @@
 import os
 from typing import Union, Optional, Dict, Any, List
 
-import gym
+import gymnasium
 import numpy as np
 
 from racing import save_video
+from racing.experiments.sb3.renderDummy import RenderDummyVecEnv
+
 
 def make_callback(version=3, **kwargs):
 
@@ -39,7 +41,7 @@ def make_callback(version=3, **kwargs):
         def __init__(
             self,
             best_model_path: str,
-            eval_env: Union[gym.Env, VecEnv],
+            eval_env: Union[gymnasium.Env, VecEnv],
             tracks: List[str],
             log_path: str = None,
             action_repeat: int = 4,
@@ -63,7 +65,9 @@ def make_callback(version=3, **kwargs):
 
             # Convert to VecEnv for consistency
             if not isinstance(eval_env, VecEnv):
+                print("DUMMY ENV IN CALLBACK")
                 eval_env = DummyVecEnv([lambda: eval_env])
+                eval_env.render_mode = 'rgb_array_follow'
 
             if isinstance(eval_env, VecEnv):
                 assert eval_env.num_envs == 1, "You must pass only one environment for evaluation"
@@ -103,13 +107,15 @@ def make_callback(version=3, **kwargs):
                 done, state = False, None
                 step = 0
                 while not done:
-                    lidar_obs = obs['lidar']
+                    lidar_obs = obs
                     action, state = self.model.predict(lidar_obs, state=state, deterministic=deterministic)
                     obs, reward, done, info = self.eval_env.step(action)
                     rewards += reward[0]
                     info = info[0]
                     if render and step % nth_frame == 0 and i == 0:
-                        frames.append(self.eval_env.render(mode='birds_eye'))
+                        render_frame = self.eval_env.render(mode='rgb_array_follow')
+                        # print(render_frame)
+                        frames.append(render_frame)
                     step += 1
 
                     if info['wrong_way'] and info['progress'] > 0.9:
@@ -117,7 +123,7 @@ def make_callback(version=3, **kwargs):
 
                     if not dnf[track]:
                         progress = info['progress']
-                        lap =  info['lap']
+                        lap = info['lap']
                         if len(self.tracks) == 1:
                             max_progress['progress'] = max(max_progress['progress'], progress + lap - 1)
                         else:
@@ -144,8 +150,8 @@ def make_callback(version=3, **kwargs):
             if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
                 for track in self.tracks:
                     nth_frame = 2
-                    render = True
-                    max_progress, frames, rewards = self._run_evaluation(n_eval_episodes=10, deterministic=True, track=track, render=render, nth_frame=nth_frame)
+                    render = False
+                    max_progress, frames, rewards = self._run_evaluation(n_eval_episodes=10, deterministic=self.deterministic, track=track, render=self.render, nth_frame=nth_frame)
 
                     if render and self.log_path is not None:
                         save_video(filename=f'{self.log_path}/videos/{track}-{self.n_calls * self.action_repeat}', frames=frames, fps=(100 // (nth_frame * self.action_repeat)))
@@ -164,6 +170,7 @@ def make_callback(version=3, **kwargs):
 
             :param locals_: the local variables during rollout collection
             """
+            self.locals.update(locals_)
             if self.callback:
                 self.callback.update_locals(locals_)
 

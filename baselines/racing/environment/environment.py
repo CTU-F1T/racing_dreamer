@@ -1,15 +1,16 @@
 import dm_env
-import gym
+import gymnasium
 from acme import wrappers, specs, types
 from acme.wrappers import GymWrapper
-from racecar_gym.envs import VectorizedMultiAgentRaceEnv, VectorizedSingleAgentRaceEnv, SingleAgentScenario, MultiAgentScenario
+from racecar_gym.envs.gym_api import VectorizedMultiAgentRaceEnv, VectorizedSingleAgentRaceEnv
+from racecar_gym.envs import SingleAgentScenario, MultiAgentScenario
 
 
 
 
 class MultiAgentGymWrapper(GymWrapper):
 
-    def __init__(self, environment: gym.Env):
+    def __init__(self, environment: gymnasium.Env):
         super().__init__(environment)
 
     def step(self, action: types.NestedArray) -> dm_env.TimeStep:
@@ -36,7 +37,7 @@ class MultiAgentGymWrapper(GymWrapper):
 
 
 def make_single_agent_env(scenario: str, render=False):
-    scenario = SingleAgentScenario.from_spec(scenario, rendering=render)
+    #scenario = SingleAgentScenario.from_spec(scenario, rendering=render)
     env = VectorizedSingleAgentRaceEnv(scenarios=[scenario])
     env = wrap_env(env=env, wrapper_configs='single_agent_wrappers.yml')
     env = wrappers.GymWrapper(environment=env)

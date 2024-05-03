@@ -1,4 +1,4 @@
-from racecar_gym import Task, register_task
+from racecar_gym.tasks import Task, register_task
 import math
 
 class MaximizeSpeed(Task):

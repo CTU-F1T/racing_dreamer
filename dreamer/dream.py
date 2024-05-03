@@ -17,7 +17,7 @@ from agents.gap_follower import GapFollower
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.mixed_precision import experimental as prec
+from tensorflow.keras import mixed_precision as prec
 
 import callbacks as callbacks
 
@@ -100,8 +100,9 @@ def define_config():
     return config
 
 
-def make_train_env(config, writer, datadir, gui=False):
-    env = make_base_env(config, gui)
+def make_train_env(config, writer, datadir, render_mode=None, render_options=None):
+    print("INITIALIZING TRAIN ENV: \n", render_mode, render_options)
+    env = make_base_env(config, render_mode=render_mode, render_options=render_options)
     if env.n_agents > 1:
         env = wrappers.FixedResetMode(env, mode='random_ball')  # sample in random points close within a ball
     else:
@@ -114,9 +115,9 @@ def make_train_env(config, writer, datadir, gui=False):
     env = wrappers.Collect(env, callback_list, config.precision)
     return env
 
-
-def make_test_env(config, writer, datadir, gui=False):
-    env = make_base_env(config, gui)
+def make_test_env(config, writer, datadir, render_mode=None, render_options=None):
+    print("INITIALIZING TEST ENV: \n", render_mode, render_options)
+    env = make_base_env(config, render_mode=render_mode, render_options=render_options)
     env = wrappers.FixedResetMode(env, mode='grid')
     env = wrappers.TimeLimit(env, config.time_limit_test / config.action_repeat)
     # rendering
@@ -131,8 +132,8 @@ def make_test_env(config, writer, datadir, gui=False):
     return env
 
 
-def make_base_env(config, gui=False):
-    env = wrappers.RaceCarBaseEnv(track=config.track, task=config.task, rendering=gui)
+def make_base_env(config, render_mode=None, render_options=None):
+    env = wrappers.RaceCarBaseEnv(track=config.track, task=config.task, render_mode=render_mode, render_options=render_options)
     env = wrappers.RaceCarWrapper(env, agent_id='A')
     env = wrappers.ActionRepeat(env, config.action_repeat)
     env = wrappers.ReduceActionSpace(env, low=[0.005, -1.0], high=[1.0, 1.0])
@@ -193,8 +194,8 @@ def main(config):
     print(f"[Info] Logdir {config.logdir}")
 
     # Create environments.
-    train_env = make_train_env(config, writer, datadir, gui=False)
-    test_env = make_test_env(config, writer, datadir, gui=False)
+    train_env = make_train_env(config, writer, datadir, render_mode='rgb_array_birds_eye', render_options={'agent': 'A'})
+    test_env = make_test_env(config, writer, datadir, render_mode='rgb_array_birds_eye', render_options={'agent': 'A'})
     agent_ids = train_env.agent_ids
     actspace = train_env.action_space
     obspace = train_env.observation_space
@@ -226,6 +227,8 @@ def main(config):
     agent = Dreamer(config, datadir, actspace, obspace, writer)
     # Resume last checkpoint (checkpoints pattern `{checkpoint_dir}/{step}.pkl`
     checkpoints = sorted(cp_dir.glob('*pkl'), key=lambda f: int(f.name.split('.')[0]))
+    # cust_path = pathlib.Path("/home/marek/racing_dreamer/dreamer/logs/experiments/columbia_dreamer_max_progress_lidar_tanhnormal_Ar4_Bl50_H15_47644_1702025908.4525807")
+    # checkpoints = sorted(cust_path.glob('*pkl'), key=lambda f: int(f.name.split('.')[0]))
     if len(checkpoints):
         try:
             agent.load(checkpoints[-1])

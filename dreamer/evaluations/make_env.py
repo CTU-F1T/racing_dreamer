@@ -1,5 +1,6 @@
 import wrappers as wrappers
-from racecar_gym.envs import MultiAgentScenario, ChangingTrackMultiAgentRaceEnv, MultiAgentRaceEnv
+from racecar_gym.envs.gym_api import ChangingTrackMultiAgentRaceEnv, MultiAgentRaceEnv
+from racecar_gym.envs.gym_api.multi_agent_race import MultiAgentScenario
 from callbacks import save_eval_videos, save_episodes, save_trajectory, summarize_episode, summarize_eval_episode
 
 

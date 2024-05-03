@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from time import time
 from typing import List, Callable, Tuple
 
-import gym
+import gymnasium
 import numpy as np
 import tensorflow as tf
 from acme.tf import savers
@@ -14,7 +14,7 @@ from acme.specs import EnvironmentSpec
 from acme.utils.counting import Counter
 from acme.utils.loggers import Logger
 from acme.wrappers import GymWrapper
-from gym.wrappers import TimeLimit, FilterObservation
+from gymnasium.wrappers import TimeLimit, FilterObservation
 from racecar_gym import SingleAgentScenario
 from racecar_gym.envs import ChangingTrackSingleAgentRaceEnv
 
@@ -54,7 +54,7 @@ class SingleAgentExperiment:
         random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
 
-    def _wrap_training(self, env: gym.Env):
+    def _wrap_training(self, env: gymnasium.Env):
         env = FilterObservation(env, filter_keys=['lidar'])
         env = Flatten(env, flatten_obs=True, flatten_actions=True)
         env = NormalizeObservations(env)
@@ -65,7 +65,7 @@ class SingleAgentExperiment:
         env = wrappers.SinglePrecisionWrapper(env)
         return env
 
-    def _wrap_test(self, env: gym.Env):
+    def _wrap_test(self, env: gymnasium.Env):
         env = FilterObservation(env, filter_keys=['lidar'])
         env = Flatten(env, flatten_obs=False, flatten_actions=True)
         env = NormalizeObservations(env)

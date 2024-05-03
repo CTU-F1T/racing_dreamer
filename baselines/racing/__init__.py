@@ -7,4 +7,5 @@ def save_video(filename: str, frames, fps):
         os.mkdir(os.path.dirname(filename))
     with imageio.get_writer(f'{filename}.mp4', fps=fps) as video:
         for frame in frames:
+            # print(frame)
             video.append_data(frame)

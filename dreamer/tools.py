@@ -11,7 +11,7 @@ import tensorflow as tf
 import tensorflow.compat.v1 as tf1
 import tensorflow_probability as tfp
 import tfplot
-from tensorflow.keras.mixed_precision import experimental as prec
+from tensorflow.keras import mixed_precision as prec
 from tensorflow_probability import distributions as tfd
 
 
@@ -175,7 +175,7 @@ def simulate(agents, env, config, datadir, writer, prefix='train', steps=0, epis
     while (steps and step < steps) or (episodes and episode < episodes):
         # Reset envs if necessary.
         if any(dones.values()):
-            obs = env.reset()
+            obs, _ = env.reset()
             if len(episode_progresses) > 0:  # at least 1 episode
                 max_progresses.append(max(episode_progresses))
                 cum_rewards.append(cum_reward)
@@ -189,7 +189,7 @@ def simulate(agents, env, config, datadir, writer, prefix='train', steps=0, epis
             actions[agent_id] = np.array(actions[agent_id][0])
         assert len(actions) == len(agents_ids)
         # Step envs.
-        obs, rewards, dones, infos = env.step(actions)
+        obs, rewards, dones, truncated, infos = env.step(actions)
         # update episode-level information
         cum_reward = cum_reward + rewards[main_id]
         episode_progresses.append(infos[main_id]['lap'] + infos[main_id]['progress'] - 1)
@@ -427,7 +427,7 @@ class Adam(tf.Module):
         self._wd = wd
         self._wdpattern = wdpattern
         self._opt = tf.optimizers.Adam(lr)
-        self._opt = prec.LossScaleOptimizer(self._opt, 'dynamic')
+        self._opt = prec.LossScaleOptimizer(self._opt, dynamic = True)
         self._variables = None
 
     @property
