@@ -23,21 +23,23 @@ class RewardModifier(Wrapper):
         # sleep(0.0005)
         observation, reward, done, truncated, info = self.env.step(action)
         # sleep(0.0005)
-        # print(action['motor'])
-        self.base_reward += reward
-        reward -= 0.005
+        # print(action['A']['motor'])
+        # print(reward)
+        agent_reward = reward['A']
+        self.base_reward += agent_reward
+        agent_reward -= 0.005
         self.speed_penalty -= 0.005
-        if action['motor'] < -0.8:
-            reward -= 0.01
+        if action['A']['motor'] < -0.8:
+            agent_reward -= 0.01
             self.breaking_penalty -= 0.01
-        if action['motor'] < -0.85 and abs(action['motor'] - self.last_action) < 0.05:
-            reward -= 0.5
+        if action['A']['motor'] < -0.85 and abs(action['A']['motor'] - self.last_action) < 0.05:
+            agent_reward -= 0.5
             self.stop_penalty -= 0.5
             self.static_steps += 1
-        self.last_action = action['motor'][0]
+        self.last_action = action['A']['motor']
 
         if self.static_steps > 20:
-            reward -= 10
+            agent_reward -= 10
             self.static_penalty -= 10
             done = True
 
@@ -47,6 +49,8 @@ class RewardModifier(Wrapper):
         #     self.counter = 0
         # print(time() - self.last_time)
         # self.last_time = time()
+        # print(agent_reward)
+        reward['A'] = agent_reward
         return observation, reward, done, truncated, info
 
     def reset(self, **kwargs):

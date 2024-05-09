@@ -8,7 +8,7 @@ import time
 import random
 import imageio
 import logging
-
+from reward_modifier import RewardModifier
 import yaml
 
 import tools as tools
@@ -134,6 +134,7 @@ def make_test_env(config, writer, datadir, render_mode=None, render_options=None
 
 def make_base_env(config, render_mode=None, render_options=None):
     env = wrappers.RaceCarBaseEnv(track=config.track, task=config.task, render_mode=render_mode, render_options=render_options)
+    env = RewardModifier(env)
     env = wrappers.RaceCarWrapper(env, agent_id='A')
     env = wrappers.ActionRepeat(env, config.action_repeat)
     env = wrappers.ReduceActionSpace(env, low=[0.005, -1.0], high=[1.0, 1.0])
