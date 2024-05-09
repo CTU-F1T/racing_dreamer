@@ -179,7 +179,7 @@ class Render:
         obss, reward, dones, truncated, info = self._env.step(action)
         for k in self._videos.keys():
             frame = self._env.render()
-            print(frame)
+            # print(frame)
             self._videos[k].append(frame)
         if any(dones.values()):
             for callback in self._callbacks:
