@@ -1,7 +1,6 @@
 import numpy as np
 import pathlib
 from models.racing_agent import Agent
-import pickle5 as pickle
 
 class RacingAgent(Agent):
 
