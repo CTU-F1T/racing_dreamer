@@ -26,7 +26,8 @@ setup(
  tests_require=['pytest'],
  entry_points={
      'console_scripts': [
-             'run_dreamer = agents.dreamer.src.agent:main'
+             'run_dreamer = agents.dreamer.src.agent:main',
+             'run_td3 = agents.sb3.src.agent:main'
      ],
    },
 )
