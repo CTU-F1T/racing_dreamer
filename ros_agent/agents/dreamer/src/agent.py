@@ -21,8 +21,8 @@ class AgentNode(Node):
         super(AgentNode, self).__init__('dreamer_agent')
 
         self.P = ParameterServer()
-        self.P.motor_max = 5.0
-        self.P.motor_min = 1.7
+        self.P.motor_max = 3.0
+        self.P.motor_min = 1.0
         self.P.link(self.P.motor_min, self.P.motor_max)
 
         self.P.reconfigure(node = self)
@@ -130,15 +130,15 @@ class AgentNode(Node):
         # motor = (float(action['motor']) * 2 + 0.5)
 
         #steering = 0 - float(action['steering'] * (float(self._config_a) / 10) * 0.42) # working better in hardware
-        # steering = 0 - float(action['steering'] * 0.6 * 0.42) # working better in hardware
-        steering = 0 - float(action['steering'] * 0.7 * 0.42) # working better in simulation
+        steering = 0 - float(action['steering'] * 0.6 * 0.42) # working better in hardware
+        # steering = 0 - float(action['steering'] * 0.7 * 0.42) # working better in simulation
         # self._steering = float(self._steering) * 2 / 3 + float(steering) * 1 / 3 # lowpass in hardware
         #div = (self._motor * 1.5) + 0.5
         div = 20
         val = self._config_a
         val = 18 - forward_max * 3
-        # self._steering = float(self._steering) * (div - val) / (div) + float(steering) * (val) / (div) # lowpass in hardware
-        self._steering = float(self._steering) * 1 / 6 + float(steering) * 5 / 6 # lowpass in simulation
+        self._steering = float(self._steering) * (div - val) / (div) + float(steering) * (val) / (div) # lowpass in hardware
+        # self._steering = float(self._steering) * 1 / 6 + float(steering) * 5 / 6 # lowpass in simulation
         # self._steering = float(steering) # direct feed
         #self._steering = self._steering + float(steering) / self._config_a # integrating
         #if self._steering > 0.42:
