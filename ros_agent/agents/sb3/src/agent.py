@@ -195,7 +195,7 @@ class AgentNode(Node):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--hardware', help='determine if running on hardware car', default="unset")
-    parser.add_argument("--agent", choices=['sac', 'ppo'], required=True)
+    parser.add_argument("--agent", choices=['sac', 'ppo', 'td3'], required=True)
     parser.add_argument("--checkpoint", type=pathlib.Path, required=True, help='path to the checkpoint zip file')
     args, ros_args = parser.parse_known_args()
 

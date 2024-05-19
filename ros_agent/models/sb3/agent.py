@@ -24,7 +24,7 @@ class RacingAgent(Agent):
         return dict_action, state
 
 if __name__ == '__main__':
-    agent = RacingAgent(algorithm='td3', checkpoint_path='best_model_ppo.zip')
+    agent = RacingAgent(algorithm='td3', checkpoint_path='best_model_td3.zip')
     obs = np.ones(shape=(1080,))
     action = agent.action(obs)
     print()
