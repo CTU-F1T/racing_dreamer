@@ -2,7 +2,7 @@ import pathlib
 import shutil
 
 from models.dreamer.racing_dreamer import RacingDreamer
-import gym
+import gymnasium as gym
 from time import sleep
 import wrappers
 import argparse

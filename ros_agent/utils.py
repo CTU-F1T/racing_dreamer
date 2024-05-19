@@ -4,7 +4,7 @@ from models.dreamer.racing_dreamer import RacingDreamer
 import pathlib
 
 def make_env(task_name: str, action_repeat: int, time_limit: float):
-    import gym
+    import gymnasium as gym
     env = gym.make(task_name)
     env = wrappers.ActionRepeat(env, action_repeat)
     env = wrappers.TimeLimit(env, int(100 * time_limit / action_repeat))

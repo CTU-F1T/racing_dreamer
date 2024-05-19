@@ -6,7 +6,6 @@ import pickle
 import re
 import uuid
 import imageio
-#import gym
 import numpy as np
 import tensorflow as tf
 import tensorflow.compat.v1 as tf1

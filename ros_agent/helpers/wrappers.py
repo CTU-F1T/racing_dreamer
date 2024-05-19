@@ -4,7 +4,7 @@ import sys
 import threading
 import traceback
 
-import gym
+import gymnasium as gym
 import racecar_gym
 import numpy as np
 from PIL import Image
@@ -13,7 +13,7 @@ envs = {}
 
 class SingleRaceCarWrapper:
   def __init__(self, name, prefix, id, rendering=False):
-    from racecar_gym.envs.multi_agent_race import MultiAgentScenario, MultiAgentRaceEnv
+    from racecar_gym.envs.gym_api.multi_agent_race import MultiAgentScenario, MultiAgentRaceEnv
     from racecar_gym.tasks import register_task
     from racecar_gym.tasks.progress_based import MaximizeProgressTask
     if name not in envs.keys():
