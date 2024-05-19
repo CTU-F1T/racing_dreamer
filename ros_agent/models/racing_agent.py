@@ -19,7 +19,7 @@ class RacingAgent:
         elif algorithm == 'ncp':
             from .ncp import RacingNCP
             self._agent = RacingNCP(checkpoint_dir=checkpoint_path)
-        elif algorithm in ['sac', 'ppo']:
+        elif algorithm in ['sac', 'ppo', 'td3']:
             from .sb3 import RacingAgent as Sb3Agent
             self._agent = Sb3Agent(algorithm=algorithm, checkpoint_path=checkpoint_path)
         elif algorithm in ['mpo', 'd4pg']:
