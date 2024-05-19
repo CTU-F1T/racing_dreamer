@@ -19,7 +19,7 @@ class RacingAgent(Agent):
     def action(self, observation, state=None) -> np.ndarray:
         action, _ = self._model.predict(observation['lidar'], state, deterministic=True)
 
-        dict_action = {'motor': action[0].numpy(), 'steering': action[1].numpy()}
+        dict_action = {'motor': action[0], 'steering': action[1]}
         return dict_action, state
 
 if __name__ == '__main__':
