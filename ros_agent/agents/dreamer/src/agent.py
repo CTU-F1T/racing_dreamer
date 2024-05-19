@@ -21,8 +21,8 @@ class AgentNode(Node):
         super(AgentNode, self).__init__('dreamer_agent')
 
         self.P = ParameterServer()
-        self.P.motor_max = 4.0
-        self.P.motor_min = 1.0
+        self.P.motor_max = 3.0
+        self.P.motor_min = 0.2
         self.P.link(self.P.motor_min, self.P.motor_max)
 
         self.P.reconfigure(node = self)
