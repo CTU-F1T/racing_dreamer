@@ -8,7 +8,7 @@ import tensorflow as tf
 import tensorflow.keras.layers as tfkl
 from yamldataclassconfig.config import YamlDataClassConfig
 
-import tools
+import helpers.tools
 
 
 @dataclass

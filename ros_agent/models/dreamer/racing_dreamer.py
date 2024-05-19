@@ -30,7 +30,7 @@ class RacingDreamer:
         if (checkpoint_dir / 'rssm.pkl').exists() and (checkpoint_dir / 'actor.pkl').exists():
             self._rssm.load(checkpoint_dir / 'rssm.pkl')
             self._actor.load(checkpoint_dir / 'actor.pkl')
-            print('Load treitlstrasse_ncp.')
+            print('Load %s.' % checkpoint_dir.name)
         else:
             raise FileNotFoundError(f'checkpoint missing in {checkpoint_dir}')
 
