@@ -7,6 +7,7 @@ import tensorflow as tf
 import time
 
 from racing_agent import RacingAgent
+from racecar_gym.core import ScenarioSpec
 from make_env import make_multi_track_env, wrap_wrt_track
 
 
@@ -17,10 +18,14 @@ for gpu in tf.config.experimental.list_physical_devices('GPU'):
 
 
 def copy_checkpoint(agent, checkpoint_file, outdir, checkpoint_id):
-    if agent in ["dreamer", "sac", "ppo"]:
+    if agent in ["sac", "ppo", "td3"]:
         cp_dir = outdir / f'checkpoints/{checkpoint_id}'
         cp_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy(checkpoint_file, cp_dir)  # copy file
+        shutil.copy(f'{checkpoint_file}/best_model', cp_dir)  # copy file
+    elif agent == "dreamer":
+        cp_dir = outdir / f'checkpoints/{checkpoint_id}'
+        cp_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy(f'{checkpoint_file}/variables.pkl', cp_dir)
     else:
         cp_dir = outdir / 'checkpoints'  # dest dir must not exist before
         cp_dir.mkdir(parents=True, exist_ok=True)
@@ -45,14 +50,19 @@ def eval_agent(base_env, agent, action_repeat, basedir, writer, checkpoint_id, s
     for track in args.tracks:
         print(f"[Info] Checkpoint {checkpoint_id + 1}, Track: {track}")
         # change track until find the current one
-        while base_env.scenario.world._config.name != track:
+        print("BASE ENVIRONMENT: \n", base_env)
+        print("SCENARIO: \n", base_env.scenario)
+        print("TRACK: \n", track)
+        spec = ScenarioSpec()
+        spec.load(base_env.scenario)
+        while spec.world.name != track:
             base_env.set_next_env()
         # wrap it to adapt logging to the current track
         env = wrap_wrt_track(base_env, action_repeat, basedir, writer, track,
                              checkpoint_id=checkpoint_id + 1, save_trajectories=save_trajectories)
         # run eval episodes
         for episode in range(args.eval_episodes):
-            obs = env.reset()
+            obs, _ = env.reset()
             done = False
             agent_state = None
             while not done:
@@ -60,7 +70,7 @@ def eval_agent(base_env, agent, action_repeat, basedir, writer, checkpoint_id, s
                        obs.items()}  # dream needs size (1, 1080)
                 action, agent_state = agent.action(obs=obs['A'], reset=np.array([done]), state=agent_state)
                 action = {'A': np.array(action)}
-                obs, rewards, dones, info = env.step(action)
+                obs, rewards, dones, truncated, info = env.step(action)
                 done = dones['A']
 
 
@@ -74,10 +84,10 @@ def make_log_dir(args):
 
 def main(args):
     action_repeat = 8 if args.agent == "dreamer" else 4
-    rendering = False
+    render_mode = "rgb_array_birds_eye"
     basedir, writer = make_log_dir(args)
     base_env = make_multi_track_env(args.tracks, action_repeat=action_repeat,
-                                    rendering=rendering, is_dreamer=args.agent == "dreamer")
+                                    render_mode=render_mode, is_dreamer=args.agent == "dreamer")
     if args.agent == "ftg":
         # programmed methods (ftg) don't need to iterate over checkpoints
         agent = RacingAgent(args.agent, None, obs_type=args.obs_type, action_dist=args.action_dist)
@@ -95,8 +105,8 @@ def main(args):
 
 
 def parse():
-    tracks = ['austria', 'columbia', 'barcelona', 'gbr', 'treitlstrasse_v2']
-    agents = ["dreamer", "d4pg", "mpo", "ppo", "sac", "ftg"]
+    tracks = ['austria', 'columbia', 'barcelona', 'gbr', 'treitlstrasse_v2', 'Ciircv2', 'treitlstrassev2']
+    agents = ["dreamer", "d4pg", "mpo", "ppo", "sac", "ftg", "td3"]
     parser = argparse.ArgumentParser()
     parser.add_argument('--agent', type=str, choices=agents, required=True)
     parser.add_argument('--obs_type', type=str, choices=["lidar", "lidar_occupancy"], required=True)

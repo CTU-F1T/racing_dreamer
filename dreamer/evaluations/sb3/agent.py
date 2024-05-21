@@ -1,17 +1,20 @@
 import numpy as np
-from stable_baselines3 import PPO, SAC
-from evaluations.racing_agent import Agent
+from stable_baselines3 import PPO, SAC, TD3
+from racing_agent import Agent
 
 
 class RacingAgent(Agent):
 
     def __init__(self, algorithm: str, checkpoint_path: str):
         if algorithm == 'ppo':
-            policy = PPO.load(checkpoint_path)
+            from stable_baselines3.ppo import MlpPolicy
         elif algorithm == 'sac':
-            policy = SAC.load(checkpoint_path)
+            from stable_baselines3.sac import MlpPolicy
+        elif algorithm == 'td3':
+            from stable_baselines3.td3 import MlpPolicy
         else:
             raise NotImplementedError
+        policy = MlpPolicy.load(f'{checkpoint_path}/best_model')
         self._model = policy
 
     def action(self, obs, state=None, **kwargs) -> np.ndarray:
@@ -19,7 +22,7 @@ class RacingAgent(Agent):
         return action[0], None      # sac/ppo returns action of size (1,2)
 
 if __name__ == '__main__':
-    agent = RacingAgent(algorithm='ppo', checkpoint_path='best_model_ppo.zip')
+    agent = RacingAgent(algorithm='td3', checkpoint_path='best_model_ppo.zip')
     obs = np.ones(shape=(1080,))
     action = agent.action(obs)
     print()

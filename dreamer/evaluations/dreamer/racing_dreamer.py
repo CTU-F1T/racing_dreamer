@@ -2,9 +2,9 @@ import pathlib
 import shutil
 
 import callbacks
-from evaluations.make_env import make_single_track_env
-from evaluations.racing_agent import Agent
-from dream import define_config, Dreamer
+from make_env import make_single_track_env
+from racing_agent import Agent
+from dream.dream import define_config, Dreamer
 import tools
 import wrappers
 import tensorflow as tf
@@ -24,7 +24,7 @@ def init_config(obs_type, action_dist):
 
 
 def make_initialization_env(config):
-    env = make_single_track_env('columbia', action_repeat=config.action_repeat, rendering=False)
+    env = make_single_track_env('columbia', action_repeat=config.action_repeat, render_mode=None)
     datadir = pathlib.Path('.tmp')
     writer = tf.summary.create_file_writer(str(datadir), max_queue=1000, flush_millis=20000)
     callbacks_list = []
@@ -49,6 +49,7 @@ class RacingDreamer(Dreamer, Agent):
         except:
             print(f"[Info] Cannot remove dir {datadir}")
             pass
+        print("AAAAAAAAAAAAAAAAYYYYYYYYYYOOOOOOOOOOOOOOOOO")
         self.load(checkpoint_path)
         print(f"[Info] Agent Variables: {len(self.variables)}")
 
@@ -57,4 +58,4 @@ class RacingDreamer(Dreamer, Agent):
         return action[0], state     # because it returns action of size (1,2)
 
     def load(self, checkpoint):
-        super(RacingDreamer, self).load(checkpoint)
+        super(RacingDreamer, self).load(f"{checkpoint}/variables.pkl")

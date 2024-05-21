@@ -10,14 +10,19 @@
 
 from __future__ import print_function
 from scipy.ndimage import filters
-import rospy
+from autopsy.node import Node
+from autopsy.core import Core
+from autopsy.reconfigure import ParameterServer
+
+
 import argparse
 import sys
 import numpy as np
-from std_msgs.msg import Float32
+from std_msgs.msg import Float32, Float32MultiArray, Header
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from ackermann_msgs.msg import AckermannDriveStamped
+from command_msgs.msg import CommandArrayStamped, Command, CommandParameter
 
 # ========================================
 # PID
@@ -57,27 +62,37 @@ class PID():
 # AgentNode
 # ========================================
 
-class AgentNode:
+class AgentNode(Node):
 
     def __init__(self, phase, identifier):
+
+        super(AgentNode, self).__init__('ftg_agent')
+
+        # self.P = ParameterServer()
+        # self.P.motor_max = 3.0
+        # self.P.motor_min = 0.7
+        # self.P.link(self.P.motor_min, self.P.motor_max)
+
+        self.P.reconfigure(node = self)
+
         self.phase = phase
         self.identifier = identifier
         scan_topic = "/scan"
         odom_topic = "/odom"
-        drive_topic = "/nav"
+        drive_topic = "/command"
 
         print("=== follow the gap node. ===");
         print("phase: {}".format(self.phase));
         print("identifier: {}".format(self.identifier));
 
-        self.max_speed = 7.0   # meters/second
-        self.max_decel = 8.26  # meters/second^2
-        self.max_stopping_distance = np.square(self.max_speed) / (2.0 * self.max_decel)
+        self.max_speed = 3.0   # meters/second
+        self.max_decel = 3.0  # meters/second^2
+        self.max_stopping_distance = 5
         self.lookahead_distance = 2.0 * self.max_stopping_distance
         self.use_lookahead_distance_only_for_visualization = False
         self.vehicle_width = (0.3302 * 1.2) # use 120% of the wheelbase as vehicle width
 
-        self.last_lidar_timestamp = rospy.Time()
+        self.last_lidar_timestamp = self.Time(0).nanoseconds / 1.e9
         self.dt_threshold = 1.0 / 50.0 # run computation at max. 50 Hz
 
         self.forward_scan_arc = (np.deg2rad(-90.0), np.deg2rad(+90.0))
@@ -95,13 +110,13 @@ class AgentNode:
         #self.linear_velocity = 0.0 # units: rad/s
         #self.angular_velocity = 0.0 # units: m/s
         self.heading_error = 0.0
-        self.last_heading_timestamp = rospy.Time()
+        self.last_heading_timestamp = self.Time(0).nanoseconds / 1.e9
 
         self.steering_angle = 0.0
         self.vehicle_speed = 0.0
-        self.max_vehicle_speed = 6.0
+        self.max_vehicle_speed = 3.0
 
-        self.max_steering_angle = np.deg2rad(24) # maximum (absolute) steering angle
+        self.max_steering_angle = np.deg2rad(20) # maximum (absolute) steering angle
         self.dt_threshold = 1.0 / 100.0 # run PID at 100 Hz (max.)
 
         self.last_odom_timestamp = 0
@@ -111,9 +126,9 @@ class AgentNode:
         self.last_lap_time = 0
         self.last_lap_timestamp = 0
 
-        rospy.Subscriber(scan_topic, LaserScan, self.laserscan_callback, queue_size=1)
-        rospy.Subscriber(odom_topic, Odometry, self.odometry_callback, queue_size=1)
-        self.drive_pub = rospy.Publisher(name=drive_topic, data_class=AckermannDriveStamped, queue_size=1)
+        self.Subscriber(scan_topic, LaserScan, self.laserscan_callback, queue_size=1)
+        self.Subscriber(odom_topic, Odometry, self.odometry_callback, queue_size=1)
+        self.drive_pub = self.Publisher(name=drive_topic, data_class=AckermannDriveStamped, queue_size=1)
 
     def get_lidar_scan_arc(self, data, angle_start, angle_end):
         if angle_start < data.angle_min or angle_end > data.angle_max or angle_start >= angle_end:
@@ -127,7 +142,7 @@ class AgentNode:
 
     def laserscan_callback(self, scan_msg: LaserScan):
         has_previous_timestamp = not self.last_lidar_timestamp.is_zero()
-        current_timestamp = rospy.Time(secs=scan_msg.header.stamp.secs, nsecs=scan_msg.header.stamp.nsecs)
+        current_timestamp = self.Time(secs=scan_msg.header.stamp.secs, nsecs=scan_msg.header.stamp.nsecs).nanoseconds /1.e-9
 
         if not has_previous_timestamp:
             self.last_lidar_timestamp = current_timestamp
@@ -201,7 +216,7 @@ class AgentNode:
         self.heading_error = data.data
 
         has_previous_timestamp = not self.last_heading_timestamp.is_zero()
-        current_timestamp = rospy.Time.now() # NOTE: Float32 message has no header/timestamp field
+        current_timestamp = self.Time.now().nanoseconds / 1.e-9 # NOTE: Float32 message has no header/timestamp field
 
         if not has_previous_timestamp:
             self.last_heading_timestamp = current_timestamp
@@ -235,7 +250,7 @@ class AgentNode:
 
 
         drive_msg = AckermannDriveStamped()
-        drive_msg.header.stamp = rospy.Time.now()
+        drive_msg.header.stamp = self.Time.now().nanoseconds / 1.e-9
         #drive_msg.header.frame_id = "" # leave blank
         drive_msg.drive.steering_angle = self.steering_angle
         drive_msg.drive.speed = self.vehicle_speed

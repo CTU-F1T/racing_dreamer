@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from evaluations.racing_agent import Agent
+from racing_agent import Agent
 import math
 from typing import Dict, Tuple
 from scipy.signal import medfilt
