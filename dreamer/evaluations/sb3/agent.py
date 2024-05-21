@@ -14,10 +14,13 @@ class RacingAgent(Agent):
             from stable_baselines3.td3 import MlpPolicy
         else:
             raise NotImplementedError
+        print("MODEL LOAD")
         policy = MlpPolicy.load(f'{checkpoint_path}/best_model')
         self._model = policy
+        print("MODEL LOADED")
 
     def action(self, obs, state=None, **kwargs) -> np.ndarray:
+        print("ACTION")
         action, _ = self._model.predict(obs['lidar'], state, deterministic=True)
         return action[0], None      # sac/ppo returns action of size (1,2)
 
